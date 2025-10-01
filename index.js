@@ -1,39 +1,40 @@
 // leitor de qr code
 const qrcode = require('qrcode-terminal');
-const { Client } = require('whatsapp-web.js'); 
+const fs = require('fs');
+const { Client, LocalAuth } = require('whatsapp-web.js');
 
+// Usa autenticação persistida
 const client = new Client({
+    authStrategy: new LocalAuth({ clientId: "bot-cem" }), // nome da pasta para salvar sessão
     puppeteer: {
         headless: true,
         args: ['--no-sandbox', '--disable-setuid-sandbox']
     }
 });
 
-
-// serviço de leitura do qr code
+// Se o bot precisar gerar QR code (só na primeira vez)
 client.on('qr', qr => {
-    qrcode.generate(qr, {small: true});
+    console.log('Escaneie este QR code no WhatsApp:');
+    qrcode.generate(qr, { small: true });
 });
 
-// apos isso ele diz que foi tudo certo
+// Quando conectado
 client.on('ready', () => {
-    console.log('Tudo certo! WhatsApp conectado.');
+    console.log('🤖 Bot pronto e conectado ao WhatsApp!');
 });
 
-// inicializa
 client.initialize();
 
-const delay = ms => new Promise(res => setTimeout(res, ms)); // delay entre ações
+// ======== Seu código de mensagens ========
+const delay = ms => new Promise(res => setTimeout(res, ms));
 
-// Função para enviar opções finais em qualquer fluxo
 async function sendEndOptions(client, msg) {
     await client.sendMessage(
         msg.from,
-        'O que você deseja fazer agora?\n\n0 - 🔙 Voltar ao menu principal\n9 - ❌ Encerrar atendimento'
+        'O que deseja fazer agora?\n0 - 🔙 Voltar ao menu\n9 - ❌ Encerrar atendimento'
     );
 }
 
-// Estado para acompanhar se cliente precisa mandar dados após escolher opção 5
 let aguardandoInfo = {};
 
 // Fluxo principal
