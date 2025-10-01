@@ -294,3 +294,19 @@
 2025/10/01-17:02:46.443 671c Delete type=2 #94
 2025/10/01-17:02:46.443 671c Delete type=2 #95
 2025/10/01-17:02:46.443 671c Delete type=2 #97
+2025/10/01-17:03:48.661 18f8 Level-0 table #103: started
+2025/10/01-17:03:48.678 18f8 Level-0 table #103: 925461 bytes OK
+2025/10/01-17:03:48.678 18f8 Delete type=0 #96
+2025/10/01-17:03:48.679 18f8 Manual compaction at level-0 from '\x00\x19\x00\x00\x00' @ 72057594037927935 : 1 .. '\x00\x1a\x00\x00\x00' @ 0 : 0; will stop at (end)
+2025/10/01-17:03:49.284 18f8 Compacting 1@1 + 4@2 files
+2025/10/01-17:03:49.328 18f8 Generated table #104@1: 32980 keys, 2186677 bytes
+2025/10/01-17:03:49.354 18f8 Generated table #105@1: 15014 keys, 2182288 bytes
+2025/10/01-17:03:49.391 18f8 Generated table #106@1: 44154 keys, 2194166 bytes
+2025/10/01-17:03:49.466 18f8 Generated table #107@1: 85100 keys, 1891456 bytes
+2025/10/01-17:03:49.466 18f8 Compacted 1@1 + 4@2 files => 8454587 bytes
+2025/10/01-17:03:49.466 18f8 compacted to: files[ 0 0 4 0 0 0 0 ]
+2025/10/01-17:03:49.467 18f8 Delete type=2 #98
+2025/10/01-17:03:49.467 18f8 Delete type=2 #99
+2025/10/01-17:03:49.467 18f8 Delete type=2 #100
+2025/10/01-17:03:49.467 18f8 Delete type=2 #101
+2025/10/01-17:03:49.467 18f8 Delete type=2 #103

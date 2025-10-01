@@ -1,28 +1,215 @@
-// leitor de qr code
-const qrcode = require('qrcode-terminal');
+// Dependências necessárias
+const qrcode = require('qrcode');
 const fs = require('fs');
 const { Client, LocalAuth } = require('whatsapp-web.js');
+const http = require('http');
 
-// Usa autenticação persistida
-const client = new Client({
-    authStrategy: new LocalAuth({ clientId: "bot-cem" }), // nome da pasta para salvar sessão
-    puppeteer: {
-        headless: true,
-        args: ['--no-sandbox', '--disable-setuid-sandbox']
+// Variável para armazenar o QR Code
+let qrCodeData = null;
+let isReady = false;
+
+// Servidor HTTP para exibir o QR Code
+const server = http.createServer((req, res) => {
+    if (req.url === '/') {
+        res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+        
+        if (isReady) {
+            res.end(`
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <title>Bot WhatsApp - Status</title>
+                    <meta charset="utf-8">
+                    <style>
+                        body { 
+                            font-family: Arial, sans-serif; 
+                            text-align: center; 
+                            padding: 50px;
+                            background: #0a0e27;
+                            color: #fff;
+                        }
+                        .success {
+                            font-size: 24px;
+                            color: #25D366;
+                        }
+                    </style>
+                </head>
+                <body>
+                    <h1>✅ Bot Conectado!</h1>
+                    <p class="success">O bot está online e funcionando corretamente.</p>
+                    <p>Você pode fechar esta página.</p>
+                </body>
+                </html>
+            `);
+        } else if (qrCodeData) {
+            res.end(`
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <title>Bot WhatsApp - QR Code</title>
+                    <meta charset="utf-8">
+                    <meta http-equiv="refresh" content="10">
+                    <style>
+                        body { 
+                            font-family: Arial, sans-serif; 
+                            text-align: center; 
+                            padding: 50px;
+                            background: #0a0e27;
+                            color: #fff;
+                        }
+                        img { 
+                            border: 10px solid #25D366; 
+                            border-radius: 15px;
+                            margin: 20px auto;
+                            background: white;
+                            padding: 20px;
+                        }
+                        .instructions {
+                            max-width: 500px;
+                            margin: 20px auto;
+                            text-align: left;
+                            background: #1a1f3a;
+                            padding: 20px;
+                            border-radius: 10px;
+                        }
+                        .warning {
+                            color: #ff9800;
+                            font-size: 14px;
+                            margin-top: 20px;
+                        }
+                    </style>
+                </head>
+                <body>
+                    <h1>📱 Escaneie o QR Code</h1>
+                    <p>Abra o WhatsApp no seu celular e escaneie o código abaixo:</p>
+                    <img src="${qrCodeData}" alt="QR Code" />
+                    <div class="instructions">
+                        <h3>📋 Instruções:</h3>
+                        <ol>
+                            <li>Abra o WhatsApp no seu celular</li>
+                            <li>Toque em <strong>Mais opções (⋮)</strong> ou <strong>Configurações</strong></li>
+                            <li>Toque em <strong>Aparelhos conectados</strong></li>
+                            <li>Toque em <strong>Conectar um aparelho</strong></li>
+                            <li>Aponte seu celular para esta tela para escanear o código</li>
+                        </ol>
+                    </div>
+                    <p class="warning">⚠️ Esta página atualiza automaticamente a cada 10 segundos</p>
+                </body>
+                </html>
+            `);
+        } else {
+            res.end(`
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <title>Bot WhatsApp - Carregando</title>
+                    <meta charset="utf-8">
+                    <meta http-equiv="refresh" content="3">
+                    <style>
+                        body { 
+                            font-family: Arial, sans-serif; 
+                            text-align: center; 
+                            padding: 50px;
+                            background: #0a0e27;
+                            color: #fff;
+                        }
+                        .loader {
+                            border: 8px solid #1a1f3a;
+                            border-top: 8px solid #25D366;
+                            border-radius: 50%;
+                            width: 60px;
+                            height: 60px;
+                            animation: spin 1s linear infinite;
+                            margin: 20px auto;
+                        }
+                        @keyframes spin {
+                            0% { transform: rotate(0deg); }
+                            100% { transform: rotate(360deg); }
+                        }
+                    </style>
+                </head>
+                <body>
+                    <h1>⏳ Iniciando Bot...</h1>
+                    <div class="loader"></div>
+                    <p>Aguarde enquanto geramos o QR Code...</p>
+                </body>
+                </html>
+            `);
+        }
+    } else if (req.url === '/health') {
+        // Endpoint para Railway verificar se o serviço está rodando
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ 
+            status: 'ok', 
+            connected: isReady,
+            hasQrCode: !!qrCodeData 
+        }));
+    } else {
+        res.writeHead(404);
+        res.end('Not Found');
     }
 });
 
-// Se o bot precisar gerar QR code (só na primeira vez)
-client.on('qr', qr => {
-    console.log('Escaneie este QR code no WhatsApp:');
-    qrcode.generate(qr, { small: true });
+// Porta do servidor (Railway usa a variável PORT)
+const PORT = process.env.PORT || 3000;
+server.listen(PORT, () => {
+    console.log(`🌐 Servidor rodando na porta ${PORT}`);
+    console.log(`📱 Acesse http://localhost:${PORT} para ver o QR Code`);
 });
 
-// Quando conectado
+// Cliente WhatsApp com autenticação persistida
+const client = new Client({
+    authStrategy: new LocalAuth({ 
+        clientId: "bot-cem",
+        dataPath: "./wwebjs_auth" // Pasta onde salva a sessão
+    }),
+    puppeteer: {
+        headless: true,
+        args: [
+            '--no-sandbox',
+            '--disable-setuid-sandbox',
+            '--disable-dev-shm-usage',
+            '--disable-accelerated-2d-canvas',
+            '--no-first-run',
+            '--no-zygote',
+            '--disable-gpu'
+        ]
+    }
+});
+
+// Gerar QR Code quando necessário
+client.on('qr', async (qr) => {
+    console.log('📱 QR Code recebido! Gerando imagem...');
+    try {
+        // Gera o QR Code como Data URL
+        qrCodeData = await qrcode.toDataURL(qr);
+        console.log(`✅ QR Code disponível em: http://localhost:${PORT}`);
+        console.log('⚠️  No Railway, use a URL pública do seu serviço!');
+    } catch (err) {
+        console.error('❌ Erro ao gerar QR Code:', err);
+    }
+});
+
+// Quando autenticado
+client.on('authenticated', () => {
+    console.log('✅ Autenticado com sucesso!');
+    qrCodeData = null; // Limpa o QR Code
+});
+
+// Quando pronto
 client.on('ready', () => {
+    isReady = true;
+    qrCodeData = null;
     console.log('🤖 Bot pronto e conectado ao WhatsApp!');
 });
 
+// Quando desconectado
+client.on('disconnected', (reason) => {
+    console.log('⚠️  Bot desconectado:', reason);
+    isReady = false;
+});
+
+// Inicializa o cliente
 client.initialize();
 
 // ======== Seu código de mensagens ========
@@ -46,7 +233,7 @@ client.on('message', async msg => {
     const dia = agora.getDay();
 
     const dentroDoHorario = hora >= 6 && hora < 19;
-    const diaUtil = dia >= 1 && dia <= 5; // de segunda (1) a sexta (5)
+    const diaUtil = dia >= 1 && dia <= 5;
 
     if (!dentroDoHorario || !diaUtil) {
         await client.sendMessage(
@@ -54,10 +241,9 @@ client.on('message', async msg => {
             '⏰ Olá! Nosso atendimento funciona de *segunda a sexta, das 08h às 17h*. ' +
             'Por favor, retorne dentro do nosso período de atendimento para darmos continuidade. 😉'
         );
-        return; // impede que caia no restante do fluxo
+        return;
     }
     
-
     // MENU PRINCIPAL
     if (msg.body.match(/(menu|Menu|dia|tarde|noite|oi|Oi|Olá|olá|ola|Ola)/i) && msg.from.endsWith('@c.us')) {
 
@@ -113,7 +299,7 @@ client.on('message', async msg => {
         await chat.sendStateTyping();
         await delay(3000);
         await client.sendMessage(msg.from, 
-            'Todos os novos pedidos passam por uma análise de complexidade e prazo antes de entrarem na fila de execução. 📝'
+            'Todos os novos pedidos passam por uma análise de complexidade e prazo antes de entrarem na fila de execução. 🔒'
         );
 
         await delay(3000);
@@ -195,7 +381,6 @@ client.on('message', async msg => {
             'As solicitações são avaliadas em horários específicos ao longo do dia durante a semana. Por isso, a resposta pode não ser imediata.'
         );
 
-        // Marca esse cliente como aguardando os dados
         aguardandoInfo[msg.from] = true;
     }
 
@@ -210,8 +395,7 @@ client.on('message', async msg => {
             '✅ Recebemos suas informações! Nossa equipe analisará sua solicitação e retornará assim que possível.\n\nObrigado pela compreensão e confiança! 🙏'
         );
 
-
-        delete aguardandoInfo[msg.from]; // reseta estado
+        delete aguardandoInfo[msg.from];
     }
 
     // VOLTAR AO MENU PRINCIPAL
