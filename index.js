@@ -165,7 +165,7 @@ const client = new Client({
     }),
     puppeteer: {
         headless: true,
-        executablePath: '/usr/bin/chromium',
+        // REMOVA O executablePath
         args: [
             '--no-sandbox',
             '--disable-setuid-sandbox',
@@ -177,6 +177,7 @@ const client = new Client({
         ]
     }
 });
+
 
 // Gerar QR Code quando necessário
 client.on('qr', async (qr) => {
