@@ -161,10 +161,11 @@ server.listen(PORT, () => {
 const client = new Client({
     authStrategy: new LocalAuth({ 
         clientId: "bot-cem",
-        dataPath: "./wwebjs_auth" // Pasta onde salva a sessão
+        dataPath: "./wwebjs_auth"
     }),
     puppeteer: {
         headless: true,
+        executablePath: '/usr/bin/chromium',  // <-- ADICIONE ESTA LINHA
         args: [
             '--no-sandbox',
             '--disable-setuid-sandbox',
