@@ -157,19 +157,6 @@ server.listen(PORT, () => {
     console.log(`🌐 Servidor rodando na porta ${PORT}`);
     console.log(`📱 Acesse http://localhost:${PORT} para ver o QR Code`);
     
-    // KEEP-ALIVE - adicione estas linhas aqui
-    const RENDER_URL = process.env.RENDER_EXTERNAL_URL;
-    
-    if (RENDER_URL) {
-        console.log('✅ Keep-alive ativado para:', RENDER_URL);
-        setInterval(() => {
-            http.get(`${RENDER_URL}/health`, (res) => {
-                console.log(`🏓 Keep-alive ping: ${res.statusCode}`);
-            }).on('error', (err) => {
-                console.log('❌ Keep-alive erro:', err.message);
-            });
-        }, 14 * 60 * 1000); // 14 minutos
-    }
 });
 
 // Cliente WhatsApp com autenticação persistida
